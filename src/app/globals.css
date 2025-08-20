@@ -5,6 +5,7 @@
   --foreground: #171717;
 }
 
+/* biome-ignore lint/suspicious/noUnknownAtRules: it will be fixed on next PR by biome */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
