@@ -22,7 +22,17 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "husky": "^9.1.7",
+    "lint-staged": "^16.1.5",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "biome check --write --no-errors-on-unmatched",
+      "biome format --write --no-errors-on-unmatched"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "biome format --write --no-errors-on-unmatched"
+    ]
   }
 }
