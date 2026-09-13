@@ -9,10 +9,10 @@
     "home": "Beranda"
   },
   "hero": {
-    "status": "Armed · Full-stack di Lif",
+    "status": "Saat ini · Full-stack di LIF",
     "title": "Saya Hyu",
-    "positioning": "Saya membangun interface React dan Next.js yang ditopang service Go dan Spring Boot, dan mengajarkan apa yang saya pelajari ke developer Indonesia.",
-    "seeWork": "Lihat hasil kerja",
+    "positioning": "Saya membangun produk web dengan React dan Next.js, dengan backend Go dan Spring Boot—sambil berbagi apa yang saya pelajari dengan developer Indonesia.",
+    "seeWork": "Lihat proyek",
     "github": "GitHub",
     "email": "Email",
     "tiktok": "TikTok"
