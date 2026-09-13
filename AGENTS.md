@@ -79,7 +79,7 @@ Built in this order. **Do not skip ahead**; each phase assumes the one before it
 | Phase | Scope | Status |
 |---|---|---|
 | 0 | Token layer, stock components, `/design-system` preview | **done** |
-| 1 | i18n skeleton: `[lang]` route tree, dictionaries, rewrites, hreflang | not started |
+| 1 | i18n skeleton: `[lang]` route tree, dictionaries, rewrites, hreflang | **done** |
 | 2 | v2 components + the homepage | not started |
 | 3 | Content pipeline + `/projects` + `/blog` (index and detail) | not started |
 | 4 | SEO/GEO surface: sitemap, robots, JSON-LD, OG images, RSS, llms.txt | not started |
@@ -111,10 +111,16 @@ is worse than no table.
 **Built**
 
 ```
-src/app/layout.tsx                    root layout, fonts, base metadata
+src/app/[lang]/layout.tsx             THE root layout — fonts, base metadata
 src/app/globals.css                   THE token layer — all of it
-src/app/page.tsx                      placeholder stub, to be replaced
-src/app/design-system/page.dev.tsx    dev-only preview of every component
+src/app/[lang]/page.tsx               placeholder stub, to be replaced
+src/app/[lang]/design-system/page.dev.tsx  dev-only preview of every component
+src/i18n/config.ts                    locales, defaultLocale, Locale, isLocale()
+src/i18n/dictionaries/en.json         chrome strings — site.* only, so far
+src/i18n/dictionaries/id.json         typed against en.json; a missing key fails tsc
+src/i18n/get-dictionary.ts            'server-only' — getLocale() + getDictionary()
+src/i18n/routing.ts                   localePath(), alternates()
+next.config.ts                        pageExtensions + the /id rewrite & redirect pair
 src/components/ui/button.tsx          Base UI + cva
 src/components/ui/card.tsx
 src/components/ui/badge.tsx
@@ -139,8 +145,6 @@ src/components/studio/hero-waveform.tsx      src/components/studio/fact-card.tsx
 src/components/studio/featured-track.tsx     src/components/studio/sequencer.tsx
 src/components/studio/rig-group.tsx          src/components/studio/session-provider.tsx
 src/hooks/use-konami.ts
-src/app/[lang]/**                            the entire locale route tree
-src/i18n/**                                  dictionaries and helpers
 src/lib/content/**                           the MDX pipeline
 content/**                                   the posts themselves
 src/app/sitemap.ts · robots.ts · rss.xml · llms.txt · opengraph-image.tsx
@@ -164,7 +168,7 @@ src/
       page.tsx                  homepage
       projects/page.tsx · projects/[slug]/page.tsx
       blog/page.tsx     · blog/[slug]/page.tsx
-      design-system/page.dev.tsx  dev-only; must move under [lang] too, see below
+      design-system/page.dev.tsx  dev-only, and under [lang] like every other route
     globals.css                 the token layer
     sitemap.ts · robots.ts      metadata files, no layout needed
     llms.txt/route.ts · rss.xml/route.ts   route handlers, no layout needed
@@ -176,7 +180,7 @@ src/
   i18n/
     config.ts                   locales, default, type Locale
     dictionaries/en.json · id.json
-    get-dictionary.ts           'server-only'
+    get-dictionary.ts           'server-only' — getLocale() + getDictionary()
     routing.ts                  localePath(), alternates()
   lib/
     content/                    schema.ts · mdx.ts · blog.ts · projects.ts
@@ -199,29 +203,36 @@ URL recruiters and AI crawlers hit first, and it should resolve in one request.
 **Mechanism**
 
 - Every route lives under `src/app/[lang]/`. That segment sits *above* the root
-  layout, which makes `lang` a **root param**.
-- **This means `src/app/layout.tsx` must be deleted, not kept.** Next requires
-  exactly one root layout, and `lang` is only a root param if
-  `src/app/[lang]/layout.tsx` *is* that root layout. Move the existing
-  `src/app/layout.tsx` and `src/app/design-system/page.tsx` down into `[lang]/`
-  as part of Phase 1 — a `page.tsx` left above `[lang]` will have no root layout
-  and the build will fail. Only metadata files (`sitemap.ts`, `robots.ts`) and
-  route handlers (`route.ts`) may stay above it; they render no UI and need no
-  layout.
+  layout, which makes `lang` a **root param**. `src/app/[lang]/layout.tsx` *is*
+  the root layout; there is deliberately no `src/app/layout.tsx`, because Next
+  allows exactly one and `lang` is only a root param if the `[lang]` one is it.
+  Only metadata files (`favicon.ico`, `sitemap.ts`, `robots.ts`) and route
+  handlers (`route.ts`) may sit above it; they render no UI and need no layout.
+  **A `page.tsx` above `[lang]` has no root layout and fails the build.**
 - `generateStaticParams` in `src/app/[lang]/layout.tsx` returns
-  `[{ lang: "en" }, { lang: "id" }]`.
-- Read the locale in any Server Component with `import { lang } from
-  "next/root-params"` — no prop drilling. It does **not** work in Client
-  Components, Server Actions or Route Handlers; pass it as a prop there.
-- `next.config.ts` carries a `rewrites` entry mapping unprefixed paths to
-  `/en/*`, and a **permanent `redirects` entry from `/en/:path*` to `/:path*`**
+  `[{ lang: "en" }, { lang: "id" }]`, and the same file sets
+  `dynamicParams = false`, so `/fr` is a 404 rather than a render attempt.
+- **Read the locale with `getLocale()` from `src/i18n/get-dictionary.ts`**, not
+  with the raw `lang()` getter. `lang()` is typed `string`; `getLocale()` narrows
+  it to `Locale` through `isLocale()`, which is what keeps every downstream
+  dictionary lookup free of an `as` cast. Server Components only — it works in
+  neither Client Components, Server Actions nor Route Handlers; pass the locale
+  as a prop across those boundaries.
+- `next.config.ts` carries the `rewrites` entry mapping unprefixed paths to
+  `/en/*` and the **permanent `redirects` entry from `/en/:path*` to `/:path*`**
   so the same page is never reachable at two URLs.
 
-> **Verify at implementation time.** Redirects run before `beforeFiles`
-> rewrites, so the pair should settle in one hop — but confirm `/en/projects`
-> 308s to `/projects` and that `/projects` does not loop. If it does, move the
-> rewrite into `src/proxy.ts` (Next 16's rename of `middleware.ts`) and keep the
-> redirect in config.
+> **Verified, `next start`, 2026-09-14.** The pair settles in one hop and does
+> not loop: `/` → 200 English with no redirect, `/id` → 200 Indonesian,
+> `/en` → 308 → `/`, `/en/projects` → 308 → `/projects`, `/fr` → 404.
+> Redirects are checked before rewrites and a rewrite is internal, so the
+> pipeline never restarts on the rewritten path — `src/proxy.ts` is not needed.
+>
+> The rewrite is in **`afterFiles`**, not `beforeFiles`, so `public/` assets and
+> real top-level routes (`sitemap.xml`, `robots.txt`) are served at the
+> filesystem step before the catch-all is considered. Its lookaheads are
+> anchored (`id$|id/`, not bare `id`) so `/identity` stays an English path.
+> Re-run those checks if you touch either entry.
 
 **Rules**
 
@@ -319,8 +330,12 @@ would still emit the route and pull its imports into the build.
 `/design-system` is the only such route today.
 
 - **Verified behaviour:** `pnpm dev` serves `/design-system` (200);
-  `pnpm build` lists only `/` and `/_not-found`; `SHOW_DEV_ROUTES=true pnpm
-  build` lists `/design-system` again, for a preview deployment.
+  `SHOW_DEV_ROUTES=false pnpm build` lists only `/en`, `/id` and `/_not-found`;
+  with the flag on, `/en/design-system` and `/id/design-system` come back, for a
+  preview deployment.
+- **Gotcha:** the gitignored `.env.local` sets `SHOW_DEV_ROUTES=true`, so a plain
+  local `pnpm build` *does* emit `/design-system`. That is local config, not a
+  regression. Pass `SHOW_DEV_ROUTES=false` to see what production will build.
 - `pageExtensions` also governs `proxy.ts` and `instrumentation.ts` resolution,
   so **`ts` must stay in the list**. There is no `js`/`jsx` — TypeScript only.
   Adding MDX later means adding `mdx` to *both* branches of the ternary.
