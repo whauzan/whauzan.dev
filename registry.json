@@ -1,0 +1,178 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "name": "studio-session",
+  "homepage": "https://whauzan.dev",
+  "items": [
+    {
+      "name": "studio-session-theme",
+      "type": "registry:theme",
+      "title": "Studio Session",
+      "description": "DAW-themed dark theme. Amber = interactive/identity, teal = live/animated.",
+      "cssVars": {
+        "theme": {
+          "font-sans": "var(--font-inter), Geist, system-ui, sans-serif",
+          "font-mono": "var(--font-jetbrains-mono), IBM Plex Mono, ui-monospace, monospace",
+          "radius-sm": "4px",
+          "radius-md": "8px",
+          "radius-lg": "12px",
+          "radius-xl": "12px"
+        },
+        "dark": {
+          "background": "#0a0b0d",
+          "foreground": "#e8eaed",
+          "card": "#131519",
+          "card-foreground": "#e8eaed",
+          "popover": "#191c22",
+          "popover-foreground": "#e8eaed",
+          "primary": "#ff5c39",
+          "primary-foreground": "#0a0b0d",
+          "secondary": "#191c22",
+          "secondary-foreground": "#e8eaed",
+          "muted": "#131519",
+          "muted-foreground": "#8a9099",
+          "accent": "#191c22",
+          "accent-foreground": "#e8eaed",
+          "destructive": "#ff4d4d",
+          "destructive-foreground": "#0a0b0d",
+          "border": "#1e2127",
+          "input": "#2a2e36",
+          "ring": "#ff5c39",
+          "chart-1": "#ff5c39",
+          "chart-2": "#00e0a4",
+          "chart-3": "#8a9099",
+          "chart-4": "#5b616b",
+          "chart-5": "#2a2e36",
+          "panel": "#131519",
+          "panel-hi": "#191c22",
+          "border-hi": "#2a2e36",
+          "foreground-tertiary": "#5b616b",
+          "primary-hover": "#ff7355",
+          "primary-dim": "#b33e27",
+          "signal": "#00e0a4",
+          "signal-dim": "#0a8f6b",
+          "arm-width": "3px"
+        }
+      }
+    },
+    {
+      "name": "button",
+      "type": "registry:ui",
+      "files": [
+        {
+          "path": "src/components/ui/button.tsx",
+          "type": "registry:ui"
+        }
+      ],
+      "dependencies": ["@base-ui/react", "class-variance-authority"],
+      "registryDependencies": ["studio-session-theme"]
+    },
+    {
+      "name": "card",
+      "type": "registry:ui",
+      "files": [
+        {
+          "path": "src/components/ui/card.tsx",
+          "type": "registry:ui"
+        }
+      ],
+      "registryDependencies": ["studio-session-theme"]
+    },
+    {
+      "name": "badge",
+      "type": "registry:ui",
+      "files": [
+        {
+          "path": "src/components/ui/badge.tsx",
+          "type": "registry:ui"
+        }
+      ],
+      "dependencies": ["@base-ui/react", "class-variance-authority"],
+      "registryDependencies": ["studio-session-theme"]
+    },
+    {
+      "name": "separator",
+      "type": "registry:ui",
+      "files": [
+        {
+          "path": "src/components/ui/separator.tsx",
+          "type": "registry:ui"
+        }
+      ],
+      "dependencies": ["@base-ui/react"]
+    },
+    {
+      "name": "section-header",
+      "type": "registry:component",
+      "files": [
+        {
+          "path": "src/components/studio/section-header.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "track-lane",
+      "type": "registry:component",
+      "files": [
+        {
+          "path": "src/components/studio/track-lane.tsx",
+          "type": "registry:component"
+        }
+      ],
+      "registryDependencies": ["badge"]
+    },
+    {
+      "name": "article-teaser",
+      "type": "registry:component",
+      "files": [
+        {
+          "path": "src/components/studio/article-teaser.tsx",
+          "type": "registry:component"
+        }
+      ],
+      "registryDependencies": ["badge"]
+    },
+    {
+      "name": "waveform",
+      "type": "registry:component",
+      "files": [
+        {
+          "path": "src/components/studio/waveform.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "mixer-skills",
+      "type": "registry:component",
+      "files": [
+        {
+          "path": "src/components/studio/mixer-skills.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "channel-strip",
+      "type": "registry:component",
+      "files": [
+        {
+          "path": "src/components/studio/channel-strip.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "transport-bar",
+      "type": "registry:component",
+      "files": [
+        {
+          "path": "src/components/studio/transport-bar.tsx",
+          "type": "registry:component"
+        }
+      ],
+      "registryDependencies": ["button"],
+      "dependencies": ["@hugeicons/react", "@hugeicons/core-free-icons"]
+    }
+  ]
+}
