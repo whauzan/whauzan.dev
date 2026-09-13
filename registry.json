@@ -90,6 +90,18 @@
       "registryDependencies": ["studio-session-theme"]
     },
     {
+      "name": "tooltip",
+      "type": "registry:ui",
+      "files": [
+        {
+          "path": "src/components/ui/tooltip.tsx",
+          "type": "registry:ui"
+        }
+      ],
+      "dependencies": ["@base-ui/react"],
+      "registryDependencies": ["studio-session-theme"]
+    },
+    {
       "name": "separator",
       "type": "registry:ui",
       "files": [
@@ -161,6 +173,54 @@
           "type": "registry:component"
         }
       ]
+    },
+    {
+      "name": "pill-nav",
+      "type": "registry:component",
+      "files": [
+        {
+          "path": "src/components/studio/pill-nav.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "hero-waveform",
+      "type": "registry:component",
+      "files": [
+        {
+          "path": "src/components/studio/hero-waveform.tsx",
+          "type": "registry:component"
+        },
+        {
+          "path": "src/components/studio/hero-waveform.levels.json",
+          "type": "registry:file",
+          "target": "src/components/studio/hero-waveform.levels.json"
+        }
+      ]
+    },
+    {
+      "name": "social-link",
+      "type": "registry:component",
+      "files": [
+        {
+          "path": "src/components/studio/social-link.tsx",
+          "type": "registry:component"
+        }
+      ],
+      "dependencies": ["@hugeicons/react", "@hugeicons/core-free-icons"]
+    },
+    {
+      "name": "track-transport",
+      "type": "registry:component",
+      "files": [
+        {
+          "path": "src/components/studio/track-transport.tsx",
+          "type": "registry:component"
+        }
+      ],
+      "dependencies": ["@hugeicons/react", "@hugeicons/core-free-icons"],
+      "registryDependencies": ["hero-waveform"]
     },
     {
       "name": "transport-bar",

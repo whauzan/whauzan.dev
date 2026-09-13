@@ -1,12 +1,7 @@
 import type { Metadata } from "next";
 import { defaultLocale, type Locale, locales } from "./config";
 
-/**
- * The one place the `/id` prefix is applied. Never hand-build an internal href
- * — if the locale mapping ever changes, this function is the only edit.
- *
- * @param path Locale-less path, leading slash, e.g. `/` or `/blog/some-slug`.
- */
+/** The one place the `/id` prefix is applied. Never hand-build an href. */
 export function localePath(path: string, locale: Locale): string {
   const normalized =
     path === "/" ? "" : path.startsWith("/") ? path : `/${path}`;
@@ -16,13 +11,8 @@ export function localePath(path: string, locale: Locale): string {
 }
 
 /**
- * Canonical + hreflang for one page, as relative paths resolved against the
- * root layout's `metadataBase`.
- *
- * `available` is how a page tells the truth about what is actually translated:
- * a post with no `id.mdx` still renders in Indonesian off the English body, but
- * it must not claim an `id` alternate, and its canonical points back at the
- * English URL so the two do not compete.
+ * Canonical + hreflang, relative to `metadataBase`. Narrow `available` when a
+ * translation is missing, so the page never claims one it does not have.
  */
 export function alternates(
   path: string,

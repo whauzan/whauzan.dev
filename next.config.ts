@@ -4,12 +4,7 @@ const showDevRoutes =
   process.env.NODE_ENV === "development" ||
   process.env.SHOW_DEV_ROUTES === "true";
 
-/**
- * Everything that is not already locale-prefixed, and not a Next internal.
- *
- * The lookaheads are anchored (`id$|id/`) rather than bare, so `/identity` is
- * still an English path while `/id` and `/id/blog` are left alone.
- */
+/** Anchored lookaheads, so `/identity` stays an English path. */
 const UNPREFIXED_PATH = "/:path((?!id$|id/|en$|en/|_next/).*)";
 
 const nextConfig: NextConfig = {
@@ -18,14 +13,8 @@ const nextConfig: NextConfig = {
     : ["ts", "tsx"],
 
   /**
-   * English is unprefixed, so the apex resolves in one request — that is the URL
-   * recruiters and AI crawlers hit first. `afterFiles` rather than `beforeFiles`
-   * so `public/` assets and real top-level routes (sitemap.xml, robots.txt) are
-   * served at the filesystem step before this catch-all is considered.
-   *
-   * This does not loop with the redirect below: redirects are checked before
-   * rewrites, and a rewrite is internal — the routing pipeline does not restart
-   * on the rewritten path.
+   * English unprefixed, Indonesian under /id. `afterFiles` so public assets and
+   * real routes win first. Pairs with the redirect below — see §2.3.
    */
   async rewrites() {
     return {

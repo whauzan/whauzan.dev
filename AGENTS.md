@@ -125,6 +125,14 @@ src/components/ui/button.tsx          Base UI + cva
 src/components/ui/card.tsx
 src/components/ui/badge.tsx
 src/components/ui/separator.tsx
+src/components/ui/tooltip.tsx         Base UI + shadcn, restyled — see §8
+src/components/studio/pill-nav.tsx    v2 — floating nav, Server Component
+src/components/studio/hero-waveform.tsx  v2 — static track shape, reads --playhead
+src/components/studio/track-transport.tsx  audio playback; the only sound on the site
+src/components/studio/social-link.tsx  icon + label account link, bottom-edge arm strip
+public/rue-lumineuse.mp3              the track, served on demand (preload="none")
+src/components/studio/hero-waveform.levels.json  120 measured RMS levels, generated
+scripts/extract-waveform.mjs          regenerates that JSON from an audio file
 src/components/studio/section-header.tsx
 src/components/studio/track-lane.tsx
 src/components/studio/article-teaser.tsx
@@ -140,8 +148,7 @@ components.json · registry.json · biome.json · commitlint.config.mjs
 **Not built — do not import these yet**
 
 ```
-src/components/studio/pill-nav.tsx           src/components/studio/post-row.tsx
-src/components/studio/hero-waveform.tsx      src/components/studio/fact-card.tsx
+src/components/studio/post-row.tsx           src/components/studio/fact-card.tsx
 src/components/studio/featured-track.tsx     src/components/studio/sequencer.tsx
 src/components/studio/rig-group.tsx          src/components/studio/session-provider.tsx
 src/hooks/use-konami.ts
@@ -375,10 +382,18 @@ Each of these has bitten someone. The parenthetical is the failure mode.
 5. **No skill percentages, ever.** No numbers, bars, or ratings against a skill.
    See `RigGroup` — a chip plus an honest usage note, never a score.
 6. **Every animation needs a reduced-motion fallback.** `globals.css` zeroes the
-   duration tokens, and the nav's mute button is a manual override — but if you
-   drive anything from JS (rAF, setInterval, AudioContext) you must check
-   `matchMedia("(prefers-reduced-motion: reduce)")` yourself. Tokens cannot stop
-   a timer.
+   duration tokens — but if you drive anything from JS (rAF, setInterval,
+   AudioContext) you must check `matchMedia("(prefers-reduced-motion: reduce)")`
+   yourself. Tokens cannot stop a timer.
+   **Caveat, live since `PillNav` replaced `TransportBar`:** the site no longer
+   has a *manual* motion override. `data-motion="paused"` is still wired up in
+   `globals.css` and `TransportBar` still writes it, but `TransportBar` only
+   survives on `/design-system`, so on the real site the OS preference is the
+   only control. That is tolerable because almost nothing on the homepage
+   animates any more — the waveform is static and the playhead moves only with
+   audio — but if you add ambient motion, restore a manual override with it
+   (the footer's bottom bar in §3.5 is the natural home) rather than shipping
+   motion with no off switch.
 7. **Elevation is border + one background step, not shadow.** Use the `hairline`
    / `hairline-hi` utilities. No outer shadows on cards. No colored left-border
    accents. There is currently **no** float-shadow utility in `globals.css`; if
@@ -452,8 +467,8 @@ each one, and move it to the built column here.
 
 | Component | Replaces | Why | Built |
 |---|---|---|:--:|
-| `studio/pill-nav` | `TransportBar` | floating centred pill, sentence-case labels | ❌ |
-| `studio/hero-waveform` | `Waveform` | masked backdrop, flexing bars, no panel | ❌ |
+| `studio/pill-nav` | `TransportBar` | floating centred pill, sentence-case labels | ✅ |
+| `studio/hero-waveform` | `Waveform` | masked backdrop, measured bars, no panel | ✅ |
 | `studio/featured-track` | `TrackLane` | full card: ghost numeral, artwork, CTA | ❌ |
 | `studio/rig-group` | `MixerSkills` | chips + usage note; a fader reads as a score | ❌ |
 | `studio/post-row` | `ArticleTeaser` | index row with excerpt, read time, tags, thumb | ❌ |
@@ -469,6 +484,131 @@ repeat at least twice? A one-off layout belongs inline in the page. New
 components go in `src/components/studio/` with a docblock in the same style, and
 get an entry in `registry.json` in the same commit.
 
+**`HeroWaveform`'s bars do not move, and that is deliberate.** Their heights are
+measured RMS levels of a real track, extracted offline; a waveform that flexes
+is a level meter, not a track. What moves is the playhead — and **only while
+audio is actually playing.** `HeroWaveform` owns no clock: it reads `--playhead`
+from an ancestor, which is what lets it stay a Server Component. `TrackTransport`
+sets that property from `audio.currentTime`.
+
+There is deliberately no idle sweep. A playhead crossing a waveform over silence
+promises sound the page is not making, which is the exact confusion this section
+exists to prevent. On load the field is entirely neutral and the playhead sits at
+0; teal appears only once someone presses play. That is also what keeps teal
+legal there under rule 2 — the played span is genuinely live, while the bars
+themselves are static and stay neutral. Do not "restore" the flex, and do not
+add an idle sweep.
+
+**The audio file now ships, and that is a licensing commitment.** It lives at
+`public/rue-lumineuse.mp3` and is served on demand — `preload="none"` means the
+3 MB is fetched on the first press of play and never on page load, so it costs a
+visitor who does not press it nothing. **Only ever put a track here that is
+cleared for redistribution.** A track that is not cleared can still supply the
+waveform: the levels are loudness numbers, data *about* the file rather than any
+part of the recording, so extraction works on a file that never enters the repo —
+in that case there is simply no playback.
+
+The mp3 is also the build-time input to `scripts/extract-waveform.mjs`. Keep the
+served file and the extracted levels in sync: if they drift, the playhead reports
+a position on a shape that belongs to a different piece of music. `TrackTransport`
+reads real `duration` at runtime, so a mismatch shows up as a playhead that
+reaches the end early or late.
+
+To change the track, replace `public/*.mp3`, update the `src` on the page, then
+regenerate the shape:
+
+```bash
+afconvert -f WAVE -d LEI16@8000 -c 1 track.mp3 /tmp/track.wav
+node scripts/extract-waveform.mjs /tmp/track.wav 120 "Title — credit" \
+  > src/components/studio/hero-waveform.levels.json
+```
+
+`afconvert` is macOS-native, so there is no ffmpeg or npm dependency. The
+timecode on the transport comes from the JSON, so a track of a different length
+needs no code change. RMS rather than peak detection is deliberate: over buckets
+this long a peak detector pins every loud bar to the ceiling and the track
+flattens into a solid block.
+
+**Do not put a transport control in the nav.** `PillNav` briefly carried a
+"Playing / Paused" chip that was really the motion mute. On a DAW-themed site
+that reads as audio transport, and it sent people clicking it looking for music
+the page was not playing. `PillNav` is now a pure Server Component shipping no
+JS, and sound lives in `TrackTransport` beside the waveform it actually controls.
+If a motion override returns, label it "Motion", never "Playing".
+
+**Autoplay is attempted, but only where it is already permitted.** The rules,
+all load-bearing:
+
+- `getAutoplayPolicy("mediaelement")` is consulted first, and a definite
+  `"disallowed"` short-circuits — `preload="none"` keeps 3 MB off the wire and a
+  doomed `play()` would spend it for nothing.
+- That API is Chrome/Edge only. **Absence must not be read as "no"**, or Safari
+  and Firefox visitors who explicitly allowed autoplay get silently denied.
+  There, `play()` is called and allowed to reject; verified that a refusal
+  leaves `readyState 0` with zero buffered ranges, so nothing downloads.
+- **Pausing opts out permanently**, in `localStorage` under
+  `whauzan:track-opted-out`; pressing play clears it. Autoplay that cannot be
+  dismissed for good is the hostile kind. Every storage access is wrapped —
+  private mode throws.
+- **The pause control must stay visible and reachable.** WCAG 1.4.2 requires a
+  stop for anything audible past three seconds, and with autoplay live this is
+  that mechanism. Do not hide it behind a hover, a scroll or a menu.
+
+`scripts/` is the one directory not in the §2.2 tree. It holds build-time
+generators only, and nothing it produces reaches the runtime except committed
+JSON.
+
+**`SocialLink` is icon-only, with the account name on hover. It is a standing
+exception to rules 4 and 10, granted explicitly — not drift.** Do not "restore"
+visible labels in the hero, and do not generalise the exception: it is the only
+place on the site allowed to reveal anything on hover.
+
+What makes it survivable is that the name never actually depends on hovering:
+
+- **`aria-label` carries it**, so assistive tech announces the account with no
+  visible label in play. Never drop it.
+- The panel responds to **`focus-visible` as well as `hover`**, so it is
+  reachable by keyboard rather than pointer-only.
+- The glyphs are recognisable brand marks, not abstract icons.
+
+The gap that remains is a **sighted touch user**, who has no hover and sees three
+unlabelled marks. The mitigation is that the footer's social row keeps its
+written names — so **do not make the footer icon-only too**, or the account names
+disappear from the site entirely on a phone.
+
+The label comes from `ui/tooltip` (Base UI, restyled — §8). It prefers the
+**bottom** side because the hero's CTA sits directly above the row and a panel
+rising into that gap collides with the button; Base UI flips it automatically if
+the viewport has no room below, which is the main thing the primitive buys over
+a hand-positioned panel.
+
+> **Verified, and counter-intuitive:** Base UI wires **no** `role="tooltip"` and
+> **no** `aria-describedby` here. The popup carries only `data-*` attributes and
+> its positioner is `role="presentation"`. The tooltip is therefore decoration
+> for sighted users and buys **no** accessibility — `aria-label` on the anchor is
+> the only accessible name, so deleting it would leave three links announced as
+> bare URLs. Do not assume the primitive is handling naming.
+
+Adopting it also moved `SocialLink` across the client boundary; it was a Server
+Component shipping zero JS. That is an accepted cost, and the boundary stops
+there — the headline, copy and waveform above it all stay server-rendered.
+
+Its hover is otherwise the system signature rather than an invention: the 3px arm
+strip wipes in along the **bottom** edge (lanes use the left edge, teasers the
+top), the surface steps to `panel-hi`, and the icon arms amber. Nothing scales,
+lifts or shifts — the strip grows on its own `scale`, exactly as `TrackLane`
+does, and the panel is positioned so it never moves layout.
+
+> **Tailwind v4 gotcha:** `scale-x-*` compiles to the CSS `scale` property, not
+> `transform`. `getComputedStyle(el).transform` reads `none` on a working arm
+> strip — check `.scale` instead. `transition-transform` does cover it, since v4
+> expands it to `transform, translate, scale, rotate`.
+
+`shadow-float` now exists in `globals.css`, defined under the rule 7 allowance.
+It is for **genuinely floating overlays only** — `PillNav` today and nothing
+else. Cards still use `hairline` plus a background step; a second float utility
+is a design-system change, so ask.
+
 The arm strip — 3px, transparent at rest, amber when armed, left edge on lanes
 and top edge on teasers — is the system's signature interaction cue and replaces
 hover-lift entirely. Do not add it to dense repeating rows (see `PostRow`).
@@ -483,8 +623,9 @@ hover-lift entirely. Do not add it to dense repeating rows (see `PostRow`).
 - `data-slot="kebab-name"` on the root element.
 - `className` merged through `cn()` and always placed last so callers can win.
 - Variants through `cva`, not through conditional string concatenation.
-- A docblock above the component saying what it is and which rules are
-  load-bearing. Props get inline `/** */` comments.
+- A short docblock above the component — what it is, plus the one load-bearing
+  constraint. Two or three sentences, not an essay (§4 General).
+- Props get one-line `/** */` comments, and only where the name is not enough.
 
 ### 3.5 Page structure
 
@@ -511,6 +652,13 @@ Sections are numbered like a tracklist (`— 01 / SESSION`) and About is a chann
 invent a second visual language for them.
 
 Content max-width is 1120px with 24px page padding. Section rhythm is 64px.
+
+**Side-by-side layouts start at `lg`, not `md`.** `TrackLane` already switches
+from stacked to horizontal there, and the hero's waveform now matches it. At
+768–1023 the field was going full-opacity while the text column was still wide
+enough to run past the mask's left fade and collide with it; below `lg` the
+backdrop drops to `opacity-45` and sits behind the copy instead. Use one
+breakpoint for this across the site.
 
 ---
 
@@ -575,8 +723,18 @@ Content max-width is 1120px with 24px page padding. Section rhythm is 64px.
 ### General
 
 - Delete code rather than commenting it out — git remembers.
-- A comment explains *why*, never *what*. If the code needs a *what* comment,
-  rename something instead.
+- **Comments are rare and short.** A comment explains *why*, never *what*. If the
+  code needs a *what* comment, rename something instead.
+  - **Budget:** one docblock per component — two or three sentences, naming what
+    it is and the single trade-off a reader would otherwise undo. Inline comments
+    are for real traps only: a browser quirk, a non-obvious constraint, a line
+    that looks wrong and is not. Aim for zero; three in a file is already a lot.
+  - **Do not narrate.** No comment restating the line beneath it. No rationale
+    essays, no bulleted arguments, no change history ("was X, now Y"), no rule
+    citations written out in prose. If it needs a paragraph, it belongs in this
+    file — link the section instead (`§3.2 r8`), or say nothing.
+  - Prefer making code self-evident over explaining it. A named constant or a
+    better prop name beats a sentence every time.
 - No `console.log` in committed code.
 - No dead exports, no unused props, no "just in case" abstraction. Two
   occurrences justify a helper; one does not.
@@ -717,9 +875,18 @@ Do not "simplify" this into a decorative animation. It is deliberate.
   usual `clsx` + `tailwind-merge` pair. That is deliberate and smaller.
 - Primitives come from `@base-ui/react`, not Radix. `useRender` + `mergeProps` is
   the Base UI polymorphism pattern — it replaces `asChild`.
-- No Input, Select, Dialog, Toast, Tooltip or Avatar. The source system defines
-  none. `npx shadcn add input` inherits the tokens correctly but carries zero
-  Studio Session decisions — check it against §3.2 before shipping it.
+- No Input, Select, Dialog, Toast or Avatar. The source system defines none.
+  `npx shadcn add input` inherits the tokens correctly but carries zero Studio
+  Session decisions — check it against §3.2 before shipping it.
+- **`ui/tooltip.tsx` is the one exception and is already restyled.** It was added
+  with the CLI, then four stock decisions were reversed, and they must stay
+  reversed: `bg-foreground`/`text-background` painted a light popup on a
+  dark-only site (now `panel-hi` + `hairline`); `zoom-in-95`/`zoom-out-95` and
+  `slide-in-from-*` scaled and shifted it in, which rule 8 forbids (now a fade
+  only); `text-xs` set it in the sans face (now `type-label`); and the arrow was
+  dropped, because elevation here is a hairline outline and a rotated square
+  cannot continue that outline around the tip. Re-running `shadcn add tooltip`
+  will restore all four — diff before accepting.
 - No logo file. Wherever a mark goes, the name is set in type: `WHR` in mono 700
   at 0.04em, or "Wahyu Hauzan Rafi" in Inter 600.
 - Fonts come from Google Fonts via `next/font`, not self-hosted. Flagged

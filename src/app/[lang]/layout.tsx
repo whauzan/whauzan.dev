@@ -14,11 +14,7 @@ export function generateStaticParams() {
   return locales.map((locale) => ({ lang: locale }));
 }
 
-/**
- * Site-wide defaults only. Canonical and language alternates are per-page and
- * belong in each page's own `generateMetadata`, a page that inherits only this
- * would claim the site root as its canonical URL.
- */
+/** Defaults only. Canonical and alternates belong in each page (§5). */
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
   const { site } = getDictionary(locale);

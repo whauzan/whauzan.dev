@@ -4,5 +4,22 @@
     "title": "Wahyu Hauzan Rafi — Full-Stack Engineer",
     "description": "Full-stack engineer fokus frontend dari Jakarta, membangun produk web dengan React, Next.js, dan TypeScript.",
     "tagline": "Full-stack engineer, fokus frontend. Jakarta, Indonesia."
+  },
+  "nav": {
+    "home": "Beranda"
+  },
+  "hero": {
+    "status": "Armed · Full-stack di Lif",
+    "title": "Saya Hyu",
+    "positioning": "Saya membangun interface React dan Next.js yang ditopang service Go dan Spring Boot, dan mengajarkan apa yang saya pelajari ke developer Indonesia.",
+    "seeWork": "Lihat hasil kerja",
+    "github": "GitHub",
+    "email": "Email",
+    "tiktok": "TikTok"
+  },
+  "track": {
+    "title": "Rue Lumineuse",
+    "play": "Putar",
+    "pause": "Jeda"
   }
 }

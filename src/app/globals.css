@@ -198,6 +198,13 @@
   border-color: var(--border-hi);
 }
 
+/* The only outer shadow in the system. Floating overlays only (§3.2 r7). */
+@utility shadow-float {
+  box-shadow:
+    0 8px 24px -8px #00000099,
+    inset 0 0 0 1px var(--border-hi);
+}
+
 /* Chrome type. Uppercase mono = labels, nav, buttons, tags, metadata. */
 @utility type-label {
   font-family: var(--font-mono);
@@ -213,6 +220,14 @@
   font-size: 12px;
   line-height: 1;
   letter-spacing: 0.02em;
+}
+
+/* Playback position. Registered so it types as a percentage and resolves in
+   calc(); inherited so TrackTransport can set it on an ancestor of the bars. */
+@property --playhead {
+  syntax: "<percentage>";
+  inherits: true;
+  initial-value: 0%;
 }
 
 /* Every animation needs a static fallback. */
